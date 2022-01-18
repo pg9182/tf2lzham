@@ -1,8 +1,8 @@
 // File: lzham_match_accel.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
-#include "include/lzham_match_accel.h"
-#include "include/lzham_timer.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
+#include "lzham_match_accel.h"
+#include "lzham_timer.h"
 
 namespace lzham
 {

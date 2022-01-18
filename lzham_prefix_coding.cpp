@@ -1,7 +1,7 @@
 // File: lzham_prefix_coding.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
-#include "include/lzham_prefix_coding.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
+#include "lzham_prefix_coding.h"
 
 #ifdef LZHAM_BUILD_DEBUG
    //#define TEST_DECODER_TABLES

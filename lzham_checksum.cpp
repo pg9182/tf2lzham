@@ -1,6 +1,6 @@
 // File: lzham_checksum.cpp
-#include "include/lzham_core.h"
-#include "include/lzham_checksum.h"
+#include "lzham_core.h"
+#include "lzham_checksum.h"
 
 namespace lzham
 {

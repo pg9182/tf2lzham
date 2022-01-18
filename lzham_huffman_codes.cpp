@@ -1,7 +1,7 @@
 // File: huffman_codes.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
-#include "include/lzham_huffman_codes.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
+#include "lzham_huffman_codes.h"
 
 namespace lzham
 {

@@ -1,9 +1,9 @@
 // File: lzham_symbol_codec.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
-#include "include/lzham_symbol_codec.h"
-#include "include/lzham_huffman_codes.h"
-#include "include/lzham_polar_codes.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
+#include "lzham_symbol_codec.h"
+#include "lzham_huffman_codes.h"
+#include "lzham_polar_codes.h"
 
 // Set to 1 to enable ~2x more frequent Huffman table updating (at slower decompression).
 #define LZHAM_MORE_FREQUENT_TABLE_UPDATING 1

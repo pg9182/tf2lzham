@@ -1,6 +1,6 @@
 // File: lzham_mem.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
@@ -10,7 +10,7 @@ using namespace lzham;
 #define LZHAM_MEM_STATS 0
 
 #ifndef LZHAM_USE_WIN32_API
-   //#define _msize malloc_usable_size
+   #define _msize malloc_usable_size
 #endif
 
 namespace lzham

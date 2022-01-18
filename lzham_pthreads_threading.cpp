@@ -19,9 +19,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-#include "include/lzham_core.h"
-#include "include/lzham_pthreads_threading.h"
-#include "include/lzham_timer.h"
+#include "lzham_core.h"
+#include "lzham_pthreads_threading.h"
+#include "lzham_timer.h"
 
 #ifdef WIN32
 #include <process.h>
@@ -34,7 +34,7 @@
 #if LZHAM_USE_PTHREADS_API
 
 #ifdef WIN32
-#pragma comment(lib, "../ext/libpthread/lib/pthreadVC2.lib")
+#pragma comment(lib, "ext/libpthread/lib/pthreadVC2.lib")
 #endif
 
 namespace lzham

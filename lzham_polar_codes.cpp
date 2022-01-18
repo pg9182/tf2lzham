@@ -1,5 +1,5 @@
 // File: polar_codes.cpp
-// See Copyright Notice and license at the end of include/lzham.h
+// See Copyright Notice and license at the end of lzham.h
 //
 // Andrew Polar's prefix code algorithm: 
 // http://ezcodesample.com/prefixer/prefixer_article.html
@@ -8,8 +8,8 @@
 // very similar but operates directly on codelengths vs. symbol frequencies:
 // Fyffe Codes for Fast Codelength Approximation, Graham Fyffe, 1999
 // http://code.google.com/p/lzham/wiki/FyffeCodes
-#include "include/lzham_core.h"
-#include "include/lzham_polar_codes.h"
+#include "lzham_core.h"
+#include "lzham_polar_codes.h"
 
 #define LZHAM_USE_SHANNON_FANO_CODES 0
 #define LZHAM_USE_FYFFE_CODES 0

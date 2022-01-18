@@ -1,6 +1,6 @@
 // File: lzham_assert.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
 
 static bool g_fail_exceptions;
 static bool g_exit_on_failure = true;

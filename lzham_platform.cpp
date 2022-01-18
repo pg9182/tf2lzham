@@ -1,7 +1,7 @@
 // File: platform.cpp
-// See Copyright Notice and license at the end of include/lzham.h
-#include "include/lzham_core.h"
-#include "include/lzham_timer.h"
+// See Copyright Notice and license at the end of lzham.h
+#include "lzham_core.h"
+#include "lzham_timer.h"
 
 #if LZHAM_PLATFORM_X360
 #include <xbdm.h>
