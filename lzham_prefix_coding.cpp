@@ -3,10 +3,6 @@
 #include "lzham_core.h"
 #include "lzham_prefix_coding.h"
 
-#ifdef LZHAM_BUILD_DEBUG
-   //#define TEST_DECODER_TABLES
-#endif
-
 namespace lzham
 {
    namespace prefix_coding

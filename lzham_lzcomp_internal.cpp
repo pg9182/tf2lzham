@@ -3,16 +3,12 @@
 #include "lzham_core.h"
 #include "lzham_lzcomp_internal.h"
 #include "lzham_checksum.h"
-#include "lzham_timer.h"
 #include "lzham_lzbase.h"
 #include <string.h>
 
 // Update and print high-level coding statistics if set to 1.
 // TODO: Add match distance coding statistics.
 #define LZHAM_UPDATE_STATS                   0
-
-// Only parse on the main thread, for easier debugging.
-#define LZHAM_FORCE_SINGLE_THREADED_PARSING  0
 
 // Verify all computed match costs against the generic/slow state::get_cost() method.
 #define LZHAM_VERIFY_MATCH_COSTS             0
@@ -138,41 +134,6 @@ namespace lzham
       }
 
       m_num_parse_threads = 1;
-
-#if !LZHAM_FORCE_SINGLE_THREADED_PARSING
-      if (params.m_max_helper_threads > 0)
-      {
-         LZHAM_ASSUME(cMaxParseThreads >= 4);
-
-         if (m_params.m_block_size < 16384)
-         {
-            m_num_parse_threads = LZHAM_MIN(cMaxParseThreads, params.m_max_helper_threads + 1);
-         }
-         else
-         {
-            if ((params.m_max_helper_threads == 1) || (m_params.m_compression_level == cCompressionLevelFastest))
-            {
-               m_num_parse_threads = 1;
-            }
-            else if (params.m_max_helper_threads <= 3)
-            {
-               m_num_parse_threads = 2;
-            }
-            else if (params.m_max_helper_threads <= 7)
-            {
-               if ((m_params.m_lzham_compress_flags & LZHAM_COMP_FLAG_EXTREME_PARSING) && (m_params.m_compression_level == cCompressionLevelUber))
-                  m_num_parse_threads = 4;
-               else
-                  m_num_parse_threads = 2;
-            }
-            else
-            {
-               // 8-16
-               m_num_parse_threads = 4;
-            }
-         }
-      }
-#endif
 
       int num_parse_jobs = m_num_parse_threads - 1;
       uint match_accel_helper_threads = LZHAM_MAX(0, (int)params.m_max_helper_threads - num_parse_jobs);
@@ -365,13 +326,6 @@ namespace lzham
 
    bool lzcompressor::code_decision(lzdecision lzdec, uint& cur_ofs, uint& bytes_to_match)
    {
-#ifdef LZHAM_LZDEBUG
-      if (!m_codec.encode_bits(CLZBase::cLZHAMDebugSyncMarkerValue, CLZBase::cLZHAMDebugSyncMarkerBits)) return false;
-      if (!m_codec.encode_bits(lzdec.is_match(), 1)) return false;
-      if (!m_codec.encode_bits(lzdec.get_len(), 17)) return false;
-      if (!m_codec.encode_bits(m_state.m_cur_state, 4)) return false;
-#endif
-
 #ifdef LZHAM_LZVERIFY
       if (lzdec.is_match())
       {
@@ -403,10 +357,6 @@ namespace lzham
 
       if (!m_codec.start_encoding(128))
          return false;
-#ifdef LZHAM_LZDEBUG
-      if (!m_codec.encode_bits(166, 12))
-         return false;
-#endif
       if (!m_codec.encode_bits(cSyncBlock, cBlockHeaderBits))
          return false;
 
@@ -467,8 +417,6 @@ namespace lzham
             m_state.reset();
          }
       }
-
-      lzham_flush_buffered_printf();
 
       return status;
    }
@@ -542,8 +490,6 @@ namespace lzham
          }
       }
 
-      lzham_flush_buffered_printf();
-
       return status;
    }
 
@@ -551,11 +497,6 @@ namespace lzham
    {
       if (!m_codec.start_encoding(16))
          return false;
-
-#ifdef LZHAM_LZDEBUG
-      if (!m_codec.encode_bits(166, 12))
-         return false;
-#endif
 
       if (!m_block_index)
       {
@@ -1269,7 +1210,6 @@ namespace lzham
    void lzcompressor::parse_job_callback(uint64 data, void* pData_ptr)
    {
       const uint parse_job_index = (uint)data;
-      scoped_perf_section parse_job_timer(cVarArgs, "parse_job_callback %u", parse_job_index);
 
       (void)pData_ptr;
 
@@ -1279,8 +1219,6 @@ namespace lzham
          extreme_parse(parse_state);
       else
          optimal_parse(parse_state);
-
-      LZHAM_MEMORY_EXPORT_BARRIER
 
       if (atomic_decrement32(&m_parse_jobs_remaining) == 0)
       {
@@ -1529,8 +1467,6 @@ namespace lzham
 
    bool lzcompressor::compress_block_internal(const void* pBuf, uint buf_len)
    {
-      scoped_perf_section compress_block_timer(cVarArgs, "****** compress_block %u", m_block_index);
-
       LZHAM_ASSERT(pBuf);
       LZHAM_ASSERT(buf_len <= m_params.m_block_size);
 
@@ -1564,10 +1500,6 @@ namespace lzham
             return false;
       }
 
-#ifdef LZHAM_LZDEBUG
-      m_codec.encode_bits(166, 12);
-#endif
-
       if (!m_codec.encode_bits(cCompBlock, cBlockHeaderBits))
          return false;
 
@@ -1597,7 +1529,6 @@ namespace lzham
                // Compression ratio has recently dropped quite a bit - slam the table update rates back up.
                if (prev_block_history.m_ratio > (recent_min_block_ratio * 3U) / 2U)
                {
-                  //printf("Emitting reset: %u %u\n", prev_block_history.m_ratio, recent_min_block_ratio);
                   emit_reset_update_rate_command = true;
                }
             }
@@ -1758,15 +1689,11 @@ namespace lzham
          }
 
          {
-            scoped_perf_section parse_timer("parsing");
-
             if ((m_use_task_pool) && (num_parse_jobs > 1))
             {
                m_parse_jobs_remaining = num_parse_jobs;
 
                {
-                  scoped_perf_section queue_task_timer("queuing parse tasks");
-
                   if (!m_params.m_pTask_pool->queue_multiple_object_tasks(this, &lzcompressor::parse_job_callback, 1, num_parse_jobs - 1))
                      return false;
                }
@@ -1774,8 +1701,6 @@ namespace lzham
                parse_job_callback(0, NULL);
 
                {
-                  scoped_perf_section wait_timer("waiting for jobs");
-
                   m_parse_jobs_complete.wait();
                }
             }
@@ -1790,8 +1715,6 @@ namespace lzham
          }
 
          {
-            scoped_perf_section coding_timer("coding");
-
             for (uint parse_thread_index = 0; parse_thread_index < num_parse_jobs; parse_thread_index++)
             {
                parse_thread_state &parse_thread = m_parse_thread_state[parse_thread_index];
@@ -1855,19 +1778,13 @@ namespace lzham
       }
 
       {
-         scoped_perf_section add_bytes_timer("add_bytes_end");
          m_accel.add_bytes_end();
       }
 
       if (!m_state.encode_eob(m_codec, m_accel, cur_dict_ofs))
          return false;
 
-#ifdef LZHAM_LZDEBUG
-      if (!m_codec.encode_bits(366, 12)) return false;
-#endif
-
       {
-         scoped_perf_section stop_encoding_timer("stop_encoding");
          if (!m_codec.stop_encoding(true)) return false;
       }
 
@@ -1879,7 +1796,7 @@ namespace lzham
       bool used_raw_block = false;
 
 #if !LZHAM_FORCE_ALL_RAW_BLOCKS
-   #if (defined(LZHAM_DISABLE_RAW_BLOCKS) || defined(LZHAM_LZDEBUG))
+   #if (defined(LZHAM_DISABLE_RAW_BLOCKS))
        if (0)
    #else
        if (compressed_size >= buf_len)
@@ -1901,11 +1818,6 @@ namespace lzham
             if (!send_configuration())
                return false;
          }
-
-#ifdef LZHAM_LZDEBUG
-         if (!m_codec.encode_bits(166, 12))
-            return false;
-#endif
 
          if (!m_codec.encode_bits(cRawBlock, cBlockHeaderBits))
             return false;
@@ -1943,11 +1855,7 @@ namespace lzham
       uint scaled_ratio =  (comp_size * cBlockHistoryCompRatioScale) / buf_len;
       update_block_history(comp_size, buf_len, scaled_ratio, used_raw_block, emit_reset_update_rate_command);
 
-      //printf("\n%u, %u, %u, %u\n", m_block_index, 500*emit_reset_update_rate_command, scaled_ratio, get_recent_block_ratio());
-
       {
-         scoped_perf_section append_timer("append");
-
          if (m_comp_buf.empty())
          {
             m_comp_buf.swap(m_codec.get_encoding_buf());

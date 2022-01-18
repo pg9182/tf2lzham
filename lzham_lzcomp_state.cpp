@@ -815,10 +815,6 @@ namespace lzham
       {
          const uint lit = dict[lzdec.m_pos];
 
-#ifdef LZHAM_LZDEBUG
-         if (!codec.encode_bits(lit, 8)) return false;
-#endif
-
          if (m_cur_state < CLZBase::cNumLitStates)
          {
             const uint lit_pred1 = get_pred_char(dict, lzdec.m_pos, 2);
@@ -839,10 +835,6 @@ namespace lzham
 
             uint lit_pred = (rep_lit0 >> (8 - CLZBase::cNumDeltaLitPredBits/2)) |
                ((rep_lit1 >> (8 - CLZBase::cNumDeltaLitPredBits/2)) << CLZBase::cNumDeltaLitPredBits/2);
-
-#ifdef LZHAM_LZDEBUG
-            if (!codec.encode_bits(rep_lit0, 8)) return false;
-#endif
 
             if (!codec.encode(delta_lit, m_delta_lit_table[lit_pred])) return false;
          }
@@ -1003,142 +995,14 @@ namespace lzham
 
             m_cur_state = (m_cur_state < CLZBase::cNumLitStates) ? CLZBase::cNumLitStates : CLZBase::cNumLitStates + 3;
          }
-
-#ifdef LZHAM_LZDEBUG
-         if (!codec.encode_bits(m_match_hist[0], 29)) return false;
-#endif
       }
 
       m_cur_ofs = lzdec.m_pos + lzdec.get_len();
       return true;
    }
 
-   void lzcompressor::state::print(symbol_codec& codec, CLZBase& lzbase, const search_accelerator& dict, const lzdecision& lzdec)
-   {
-      LZHAM_NOTE_UNUSED(codec), LZHAM_NOTE_UNUSED(lzbase), LZHAM_NOTE_UNUSED(dict);
-
-      const uint lit_pred0 = get_pred_char(dict, lzdec.m_pos, 1);
-
-      uint is_match_model_index = LZHAM_IS_MATCH_MODEL_INDEX(lit_pred0, m_cur_state);
-
-      printf("  pos: %u, state: %u, match_pred: %u, is_match_model_index: %u, is_match: %u, cost: %f\n",
-         lzdec.m_pos,
-         m_cur_state,
-         lit_pred0, is_match_model_index, lzdec.is_match(), get_cost(lzbase, dict, lzdec) / (float)cBitCostScale);
-
-      if (!lzdec.is_match())
-      {
-         const uint lit = dict[lzdec.m_pos];
-
-         if (m_cur_state < CLZBase::cNumLitStates)
-         {
-            const uint lit_pred1 = get_pred_char(dict, lzdec.m_pos, 2);
-
-            uint lit_pred = (lit_pred0 >> (8 - CLZBase::cNumLitPredBits/2)) |
-               (((lit_pred1 >> (8 - CLZBase::cNumLitPredBits/2)) << CLZBase::cNumLitPredBits/2));
-
-            printf("---Regular lit: %u '%c', lit_pred: %u '%c'\n",
-               lit, ((lit >= 32) && (lit <= 127)) ? lit : '.',
-               lit_pred, ((lit_pred >= 32) && (lit_pred <= 127)) ? lit_pred : '.');
-         }
-         else
-         {
-            // delta literal
-            const uint rep_lit0 = dict[(lzdec.m_pos - m_match_hist[0]) & dict.m_max_dict_size_mask];
-            const uint rep_lit1 = dict[(lzdec.m_pos - m_match_hist[0] - 1) & dict.m_max_dict_size_mask];
-
-            uint delta_lit = rep_lit0 ^ lit;
-
-            uint lit_pred = (rep_lit0 >> (8 - CLZBase::cNumDeltaLitPredBits/2)) |
-               ((rep_lit1 >> (8 - CLZBase::cNumDeltaLitPredBits/2)) << CLZBase::cNumDeltaLitPredBits/2);
-
-            printf("***Delta lit: %u '%c', Mismatch: %u '%c', Delta: 0x%02X, lit_pred: %u\n",
-               lit, ((lit >= 32) && (lit <= 127)) ? lit : '.',
-               rep_lit0, ((rep_lit0 >= 32) && (rep_lit0 <= 127)) ? rep_lit0 : '.',
-               delta_lit, lit_pred);
-         }
-      }
-      else
-      {
-         uint actual_match_len = dict.get_match_len(0, lzdec.get_match_dist(*this), CLZBase::cMaxMatchLen);
-         LZHAM_ASSERT(actual_match_len >= lzdec.get_len());
-
-         // match
-         if (lzdec.m_dist < 0)
-         {
-            int match_hist_index = -lzdec.m_dist - 1;
-
-            if (!match_hist_index)
-            {
-               if (lzdec.m_len == 1)
-               {
-                  printf("!!!Rep 0 len1\n");
-               }
-               else
-               {
-                  printf("!!!Rep 0 full len %u\n", lzdec.m_len);
-               }
-            }
-            else
-            {
-               printf("!!!Rep %u full len %u\n", match_hist_index, lzdec.m_len);
-            }
-         }
-         else
-         {
-            LZHAM_ASSERT(lzdec.m_len >= CLZBase::cMinMatchLen);
-
-            // full match
-            uint match_slot, match_extra;
-            lzbase.compute_lzx_position_slot(lzdec.m_dist, match_slot, match_extra);
-
-            uint match_low_sym = 0; LZHAM_NOTE_UNUSED(match_low_sym);
-            int large_len_sym = -1; LZHAM_NOTE_UNUSED(large_len_sym);
-            if (lzdec.m_len >= 9)
-            {
-               match_low_sym = 7;
-
-               large_len_sym = lzdec.m_len - 9;
-            }
-            else
-               match_low_sym = lzdec.m_len - 2;
-
-            uint match_high_sym = 0; LZHAM_NOTE_UNUSED(match_high_sym);
-
-            LZHAM_ASSERT(match_slot >= CLZBase::cLZXLowestUsableMatchSlot && (match_slot < lzbase.m_num_lzx_slots));
-            match_high_sym = match_slot - CLZBase::cLZXLowestUsableMatchSlot;
-
-            //uint main_sym = match_low_sym | (match_high_sym << 3);
-
-            uint num_extra_bits = lzbase.m_lzx_position_extra_bits[match_slot];
-            printf("^^^Full match Len %u Dist %u, Slot %u, ExtraBits: %u", lzdec.m_len, lzdec.m_dist, match_slot, num_extra_bits);
-
-            if (num_extra_bits < 3)
-            {
-            }
-            else
-            {
-               printf("  (Low 4 bits: %u vs. %u)", lzdec.m_dist & 15, match_extra & 15);
-            }
-            printf("\n");
-         }
-
-         if (actual_match_len > lzdec.get_len())
-         {
-            printf("  TRUNCATED match, actual len is %u, shortened by %u\n", actual_match_len, actual_match_len - lzdec.get_len());
-         }
-      }
-   }
-
    bool lzcompressor::state::encode_eob(symbol_codec& codec, const search_accelerator& dict, uint dict_pos)
    {
-#ifdef LZHAM_LZDEBUG
-      if (!codec.encode_bits(CLZBase::cLZHAMDebugSyncMarkerValue, CLZBase::cLZHAMDebugSyncMarkerBits)) return false;
-      if (!codec.encode_bits(1, 1)) return false;
-      if (!codec.encode_bits(0, 17)) return false;
-      if (!codec.encode_bits(m_cur_state, 4)) return false;
-#endif
-
       const uint match_pred = get_pred_char(dict, dict_pos, 1);
       uint is_match_model_index = LZHAM_IS_MATCH_MODEL_INDEX(match_pred, m_cur_state);
       if (!codec.encode(1, m_is_match_model[is_match_model_index])) return false;
@@ -1151,13 +1015,6 @@ namespace lzham
 
    bool lzcompressor::state::encode_reset_state_partial(symbol_codec& codec, const search_accelerator& dict, uint dict_pos)
    {
-#ifdef LZHAM_LZDEBUG
-      if (!codec.encode_bits(CLZBase::cLZHAMDebugSyncMarkerValue, CLZBase::cLZHAMDebugSyncMarkerBits)) return false;
-      if (!codec.encode_bits(1, 1)) return false;
-      if (!codec.encode_bits(0, 17)) return false;
-      if (!codec.encode_bits(m_cur_state, 4)) return false;
-#endif
-
       const uint match_pred = get_pred_char(dict, dict_pos, 1);
       uint is_match_model_index = LZHAM_IS_MATCH_MODEL_INDEX(match_pred, m_cur_state);
       if (!codec.encode(1, m_is_match_model[is_match_model_index])) return false;
@@ -1267,84 +1124,6 @@ namespace lzham
       m_total_update_rate_resets = 0;
 
       m_max_len2_dist = 0;
-   }
-
-   void lzcompressor::coding_stats::print()
-   {
-      if (!m_total_contexts)
-         return;
-
-      printf("-----------\n");
-      printf("Coding statistics:\n");
-      printf("Total update rate resets: %u\n", m_total_update_rate_resets);
-      printf("Total Bytes: %u, Total Contexts: %u, Total Cost: %f bits (%f bytes)\nContext ave cost: %f StdDev: %f Min: %f Max: %f\n", m_total_bytes, m_total_contexts, m_total_cost, m_total_cost / 8.0f, m_context_stats.get_average(), m_context_stats.get_std_dev(), m_context_stats.get_min_val(), m_context_stats.get_max_val());
-      printf("Ave bytes per context: %f\n", m_total_bytes / (float)m_total_contexts);
-
-      printf("IsMatch:\n");
-      printf("  Total: %u, Cost: %f (%f bytes), Ave. Cost: %f, Worst Cost: %f\n",
-         m_total_contexts, m_total_match_bits_cost, m_total_match_bits_cost / 8.0f, m_total_match_bits_cost / math::maximum<uint>(1, m_total_contexts), m_worst_match_bits_cost);
-
-      printf("  IsMatch(0): %u, Cost: %f (%f bytes), Ave. Cost: %f\n",
-         m_total_nonmatches, m_total_is_match0_bits_cost, m_total_is_match0_bits_cost / 8.0f, m_total_is_match0_bits_cost / math::maximum<uint>(1, m_total_nonmatches));
-
-      printf("  IsMatch(1): %u, Cost: %f (%f bytes), Ave. Cost: %f\n",
-         m_total_matches, m_total_is_match1_bits_cost, m_total_is_match1_bits_cost / 8.0f, m_total_is_match1_bits_cost / math::maximum<uint>(1, m_total_matches));
-
-      printf("Literal stats:\n");
-      printf("  Count: %u, Cost: %f (%f bytes), Ave: %f StdDev: %f Min: %f Max: %f\n", m_lit_stats.get_number_of_values32(), m_lit_stats.get_total(), m_lit_stats.get_total() / 8.0f, m_lit_stats.get_average(), m_lit_stats.get_std_dev(), m_lit_stats.get_min_val(), m_lit_stats.get_max_val());
-
-      printf("Delta literal stats:\n");
-      printf("  Count: %u, Cost: %f (%f bytes), Ave: %f StdDev: %f Min: %f Max: %f\n", m_delta_lit_stats.get_number_of_values32(), m_delta_lit_stats.get_total(), m_delta_lit_stats.get_total() / 8.0f, m_delta_lit_stats.get_average(), m_delta_lit_stats.get_std_dev(), m_delta_lit_stats.get_min_val(), m_delta_lit_stats.get_max_val());
-
-      printf("Rep0 Len1 stats:\n");
-      printf("  Count: %u, Cost: %f (%f bytes), Ave. Cost: %f StdDev: %f Min: %f Max: %f\n", m_rep0_len1_stats.get_number_of_values32(), m_rep0_len1_stats.get_total(), m_rep0_len1_stats.get_total() / 8.0f, m_rep0_len1_stats.get_average(), m_rep0_len1_stats.get_std_dev(), m_rep0_len1_stats.get_min_val(), m_rep0_len1_stats.get_max_val());
-
-      printf("Rep0 Len2+ stats:\n");
-      printf("  Count: %u, Cost: %f (%f bytes), Ave. Cost: %f StdDev: %f Min: %f Max: %f\n", m_rep0_len2_plus_stats.get_number_of_values32(), m_rep0_len2_plus_stats.get_total(), m_rep0_len2_plus_stats.get_total() / 8.0f, m_rep0_len2_plus_stats.get_average(), m_rep0_len2_plus_stats.get_std_dev(), m_rep0_len2_plus_stats.get_min_val(), m_rep0_len2_plus_stats.get_max_val());
-
-      for (uint i = 0; i < CLZBase::cMatchHistSize; i++)
-      {
-         printf("Rep %u stats:\n", i);
-         printf("  Count: %u, Cost: %f (%f bytes), Ave. Cost: %f StdDev: %f Min: %f Max: %f\n", m_rep_stats[i].get_number_of_values32(), m_rep_stats[i].get_total(), m_rep_stats[i].get_total() / 8.0f, m_rep_stats[i].get_average(), m_rep_stats[i].get_std_dev(), m_rep_stats[i].get_min_val(), m_rep_stats[i].get_max_val());
-      }
-
-      for (uint i = CLZBase::cMinMatchLen; i <= CLZBase::cMaxMatchLen; i++)
-      {
-         printf("Match %u: Total: %u, Cost: %f (%f bytes), Ave: %f StdDev: %f Min: %f Max: %f\n", i,
-            m_full_match_stats[i].get_number_of_values32(), m_full_match_stats[i].get_total(), m_full_match_stats[i].get_total() / 8.0f,
-            m_full_match_stats[i].get_average(), m_full_match_stats[i].get_std_dev(), m_full_match_stats[i].get_min_val(), m_full_match_stats[i].get_max_val());
-      }
-
-      printf("Total near len2 matches: %u, total far len2 matches: %u\n", m_total_near_len2_matches, m_total_far_len2_matches);
-      printf("Total matches: %u, truncated matches: %u\n", m_total_matches, m_total_truncated_matches);
-      printf("Max full match len2 distance: %u\n", m_max_len2_dist);
-
-#if 0
-      printf("Size of truncation histogram:\n");
-      for (uint i = 0; i <= CLZBase::cMaxMatchLen; i++)
-      {
-         printf("%05u ", m_match_truncation_len_hist[i]);
-         if ((i & 15) == 15) printf("\n");
-      }
-      printf("\n");
-
-      printf("Number of truncations per encoded match length histogram:\n");
-      for (uint i = 0; i <= CLZBase::cMaxMatchLen; i++)
-      {
-         printf("%05u ", m_match_truncation_hist[i]);
-         if ((i & 15) == 15) printf("\n");
-      }
-      printf("\n");
-
-      for (uint s = 0; s < CLZBase::cNumStates; s++)
-      {
-         printf("-- Match type truncation hist for state %u:\n", s);
-         for (uint i = 0; i < LZHAM_ARRAY_SIZE(m_match_type_truncation_hist[s]); i++)
-         {
-            printf("%u truncated (%3.1f%%), %u not truncated\n", m_match_type_truncation_hist[s][i], 100.0f * (float)m_match_type_truncation_hist[s][i] / (m_match_type_truncation_hist[s][i] + m_match_type_was_not_truncated_hist[s][i]), m_match_type_was_not_truncated_hist[s][i]);
-         }
-      }
-#endif
    }
 
    void lzcompressor::coding_stats::update(const lzdecision& lzdec, const state& cur_state, const search_accelerator& dict, bit_cost_t cost)

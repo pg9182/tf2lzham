@@ -160,9 +160,6 @@ namespace lzham
       checksums->adler32 = pState->m_compressor.get_src_adler32();
       checksums->crc32 = pState->m_compressor.get_src_crc32();
 
-      printf("checksums->adler32 %zX\n", checksums->adler32);
-      printf("checksums->crc32 %zX\n", checksums->crc32);
-
       lzham_delete(pState);
       return checksums;
    }

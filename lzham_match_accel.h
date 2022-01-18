@@ -2,7 +2,7 @@
 // See Copyright Notice and license at the end of lzham.h
 #pragma once
 #include "lzham_lzbase.h"
-#include "lzham_threading.h"
+#include "lzham_null_threading.h"
 
 namespace lzham
 {

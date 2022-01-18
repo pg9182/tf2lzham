@@ -117,11 +117,6 @@ namespace lzham
       const uint8* m_pCopy_src;
       uint m_num_raw_bytes_remaining;
 
-      uint m_debug_is_match;
-      uint m_debug_match_len;
-      uint m_debug_match_dist;
-      uint m_debug_lit;
-
       lzham_decompress_status_t m_z_last_status;
       uint m_z_first_call;
       uint m_z_has_flushed;
@@ -216,11 +211,6 @@ namespace lzham
    void lzham_decompressor::init()
    {
       m_lzBase.init_position_slots(m_params.m_dict_size_log2);
-
-#ifdef LZHAM_LZDEBUG
-      if (m_pDecomp_buf)
-         memset(m_pDecomp_buf, 0xCE, 1U << m_params.m_dict_size_log2);
-#endif
 
       m_state = LZHAM_CR_INITIAL_STATE;
       m_step = 0;
@@ -418,11 +408,6 @@ namespace lzham
       // Output block loop.
       do
       {
-#ifdef LZHAM_LZDEBUG
-         uint outer_sync_marker; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, k, 12);
-         LZHAM_VERIFY(outer_sync_marker == 166);
-#endif
-         
          // Decode block type.
          LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, m_block_type, CLZDecompBase::cBlockHeaderBits);
 
@@ -638,47 +623,7 @@ namespace lzham
                   reset_all_tables();
             }
 
-#ifdef LZHAM_LZDEBUG
-            m_initial_step = m_step;
-            m_block_step = 0;
-            for ( ; ; m_step++, m_block_step++)
-#else
-            for ( ; ; )
-#endif
-            {
-#ifdef LZHAM_LZDEBUG
-               uint sync_marker; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, x, CLZDecompBase::cLZHAMDebugSyncMarkerBits);
-               LZHAM_VERIFY(sync_marker == CLZDecompBase::cLZHAMDebugSyncMarkerValue);
-
-               LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, m_debug_is_match, 1);
-               LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, m_debug_match_len, 17);
-
-               uint debug_cur_state; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, debug_cur_state, 4);
-               LZHAM_VERIFY(cur_state == debug_cur_state);
-#endif
-
-#ifdef _DEBUG
-{
-               uint total_block_bytes = ((dst_ofs - m_start_block_dst_ofs) & dict_size_mask);
-               if (total_block_bytes > 0)
-               {
-                  LZHAM_ASSERT(prev_char == pDst[(dst_ofs - 1) & dict_size_mask]);
-               }
-               else
-               {
-                  LZHAM_ASSERT(prev_char == 0);
-               }
-
-               if (total_block_bytes > 1)
-               {
-                  LZHAM_ASSERT(prev_prev_char == pDst[(dst_ofs - 2) & dict_size_mask]);
-               }
-               else
-               {
-                  LZHAM_ASSERT(prev_prev_char == 0);
-               }
-}
-#endif
+            for ( ; ; ) {
                // Read "is match" bit.
                uint match_model_index;
                match_model_index = LZHAM_IS_MATCH_MODEL_INDEX(prev_char, cur_state);
@@ -686,21 +631,9 @@ namespace lzham
 
                uint is_match_bit; LZHAM_SYMBOL_CODEC_DECODE_ARITH_BIT(codec, is_match_bit, m_is_match_model[match_model_index]);
 
-#ifdef LZHAM_LZDEBUG
-               LZHAM_VERIFY(is_match_bit == m_debug_is_match);
-#endif
-
                if (LZHAM_BUILTIN_EXPECT(!is_match_bit, 0))
                {
                   // Handle literal.
-
-#ifdef LZHAM_LZDEBUG
-                  LZHAM_VERIFY(m_debug_match_len == 1);
-#endif
-
-#ifdef LZHAM_LZDEBUG
-                  LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, m_debug_lit, 8);
-#endif
                   
                   if ((unbuffered) && (LZHAM_BUILTIN_EXPECT(dst_ofs >= out_buf_size, 0)))
                   {
@@ -720,10 +653,6 @@ namespace lzham
                      pDst[dst_ofs] = static_cast<uint8>(r);
                      prev_prev_char = prev_char;
                      prev_char = r;
-
-#ifdef LZHAM_LZDEBUG
-                     LZHAM_VERIFY(pDst[dst_ofs] == m_debug_lit);
-#endif
                   }
                   else
                   {
@@ -744,20 +673,11 @@ namespace lzham
 #define LZHAM_SAVE_LOCAL_STATE m_rep_lit0 = rep_lit0;
 #define LZHAM_RESTORE_LOCAL_STATE rep_lit0 = m_rep_lit0;
 
-#ifdef LZHAM_LZDEBUG
-                     uint debug_rep_lit0; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, debug_rep_lit0, 8);
-                     LZHAM_VERIFY(debug_rep_lit0 == rep_lit0);
-#endif
-
                      uint r; LZHAM_DECOMPRESS_DECODE_ADAPTIVE_SYMBOL(codec, r, m_delta_lit_table[lit_pred]);
                      r ^= rep_lit0;
                      pDst[dst_ofs] = static_cast<uint8>(r);
                      prev_prev_char = prev_char;
                      prev_char = r;
-
-#ifdef LZHAM_LZDEBUG
-                     LZHAM_VERIFY(pDst[dst_ofs] == m_debug_lit);
-#endif
 
 #undef LZHAM_SAVE_LOCAL_STATE
 #undef LZHAM_RESTORE_LOCAL_STATE
@@ -977,14 +897,6 @@ namespace lzham
                   }
 
                   // We have the match's length and distance, now do the copy.
-
-#ifdef LZHAM_LZDEBUG
-                  LZHAM_VERIFY(match_len == m_debug_match_len);
-                  LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, m_debug_match_dist, 25);
-                  uint d; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, d, 4);
-                  m_debug_match_dist = (m_debug_match_dist << 4) | d;
-                  LZHAM_VERIFY((uint)match_hist0 == m_debug_match_dist);
-#endif
                   if ( (unbuffered) && LZHAM_BUILTIN_EXPECT((((size_t)match_hist0 > dst_ofs) || ((dst_ofs + match_len) > out_buf_size)), 0) )
                   {
                      LZHAM_SYMBOL_CODEC_DECODE_END(codec);
@@ -1091,10 +1003,6 @@ namespace lzham
 #define LZHAM_RESTORE_LOCAL_STATE
             } // for ( ; ; )
 
-#ifdef LZHAM_LZDEBUG
-            uint end_sync_marker; LZHAM_SYMBOL_CODEC_DECODE_GET_BITS(codec, end_sync_marker, 12);
-            LZHAM_VERIFY(end_sync_marker == 366);
-#endif
             LZHAM_SYMBOL_CODEC_DECODE_ALIGN_TO_BYTE(codec);
          }
          else if (m_block_type == CLZDecompBase::cEOFBlock)
@@ -1148,12 +1056,6 @@ namespace lzham
              {
                  m_decomp_crc32 = crc32(cInitCRC32, pDst, dst_ofs);
              }
-
-             //if (m_file_src_file_crc32 != m_decomp_crc32)
-             //{
-             //    printf("m_file_src_file_crc32 %zX\n", m_file_src_file_crc32);
-             //    m_status = LZHAM_DECOMP_STATUS_FAILED_CRC32;
-             //}
          }
          else
          {

@@ -46,10 +46,6 @@ namespace lzham
    LZHAM_DEFINE_BUILT_IN_TYPE(float)
    LZHAM_DEFINE_BUILT_IN_TYPE(double)
    LZHAM_DEFINE_BUILT_IN_TYPE(long double)
-   #if defined(WIN32)
-      LZHAM_DEFINE_BUILT_IN_TYPE(__int64)
-      LZHAM_DEFINE_BUILT_IN_TYPE(unsigned __int64)
-   #endif
 
 #undef LZHAM_DEFINE_BUILT_IN_TYPE
 

@@ -201,29 +201,6 @@ namespace lzham
       0x25A13,0x22BA0,0x1FD33,0x1CECB,0x1A069,0x1720E,0x143B8,0x11567,0xE71D,0xB8D8,0x8A9A,
       0x5C61,0x2E2D
    };
-   
-#define LZHAM_CREATE_PROB_COST_TABLE 0
-
-#if LZHAM_CREATE_PROB_COST_TABLE
-	class arith_prob_cost_initializer
-	{
-	public:
-		arith_prob_cost_initializer()
-		{
-			const double cInvLn2 = 1.4426950408889634073599246810019; // 1.0/ln(2)
-
-			for (uint i = 0; i < cSymbolCodecArithProbScale; i++)
-			{
-            double flBits = i ? (-log(i * (1.0 / cSymbolCodecArithProbScale)) * cInvLn2) : 0;
-				g_prob_cost[i] = static_cast<uint32>(floor(.5f + flBits * cBitCostScale));
-            printf("0x%X,", g_prob_cost[i]);
-            if ((i % 11) == 10) printf("\n");
-			}
-         printf("\n");
-		}
-	};
-   static arith_prob_cost_initializer g_prob_cost_initializer;
-#endif
 
    raw_quasi_adaptive_huffman_data_model::raw_quasi_adaptive_huffman_data_model(bool encoding, uint total_syms, bool fast_updating, bool use_polar_codes) :
       m_pDecode_tables(NULL),
@@ -472,13 +449,6 @@ namespace lzham
    void raw_quasi_adaptive_huffman_data_model::reset_update_rate()
    {
       m_total_count += (m_update_cycle - m_symbols_until_update);
-
-#ifdef _DEBUG
-      uint actual_total = 0;
-      for (uint i = 0; i < m_sym_freq.size(); i++)
-         actual_total += m_sym_freq[i];
-      LZHAM_ASSERT(actual_total == m_total_count);
-#endif
 
       if (m_total_count > m_total_syms)
          rescale();

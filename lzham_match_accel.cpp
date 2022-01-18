@@ -2,7 +2,6 @@
 // See Copyright Notice and license at the end of lzham.h
 #include "lzham_core.h"
 #include "lzham_match_accel.h"
-#include "lzham_timer.h"
 
 namespace lzham
 {
@@ -124,8 +123,6 @@ namespace lzham
 
    void search_accelerator::find_all_matches_callback(uint64 data, void* pData_ptr)
    {
-      scoped_perf_section find_all_matches_timer("find_all_matches_callback");
-
       LZHAM_NOTE_UNUSED(pData_ptr);
       const uint thread_index = (uint)data;
 
@@ -314,9 +311,6 @@ namespace lzham
             memcpy(&m_matches[match_ref_ofs],
                    temp_matches + (num_matches - num_matches_to_write),
                    sizeof(temp_matches[0]) * num_matches_to_write);
-
-            // FIXME: This is going to really hurt on platforms requiring export barriers.
-            LZHAM_MEMORY_EXPORT_BARRIER
 
             atomic_exchange32((atomic32_t*)&m_match_refs[static_cast<uint>(fill_lookahead_pos - m_fill_lookahead_pos)], match_ref_ofs);
          }
@@ -533,8 +527,6 @@ namespace lzham
             lzham_yield_processor();
             lzham_yield_processor();
             lzham_yield_processor();
-
-            LZHAM_MEMORY_IMPORT_BARRIER
          }
          else
          {
@@ -543,8 +535,6 @@ namespace lzham
             lzham_sleep(1);
          }
       }
-
-      LZHAM_MEMORY_IMPORT_BARRIER
 
       return &m_matches[match_ref];
    }

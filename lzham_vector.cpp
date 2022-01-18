@@ -5,7 +5,7 @@
 
 namespace lzham
 {
-   bool elemental_vector::increase_capacity(uint min_new_capacity, bool grow_hint, uint element_size, object_mover pMover, bool nofail)
+   bool elemental_vector::increase_capacity(uint min_new_capacity, bool grow_hint, uint element_size, object_mover pMover)
    {
       LZHAM_ASSERT(m_size <= m_capacity);
       
@@ -33,12 +33,7 @@ namespace lzham
          void* new_p = lzham_realloc(m_p, desired_size, &actual_size, true);
          if (!new_p)
          {
-            if (nofail)
-               return false;
-               
-            char buf[256];
-            sprintf_s(buf, sizeof(buf), "vector: lzham_realloc() failed allocating %u bytes", desired_size);
-            LZHAM_FAIL(buf);
+            return false;
          }
          m_p = new_p;
       }
@@ -47,12 +42,7 @@ namespace lzham
          void* new_p = lzham_malloc(desired_size, &actual_size);
          if (!new_p)
          {
-            if (nofail)
-               return false;
-               
-            char buf[256];
-            sprintf_s(buf, sizeof(buf), "vector: lzham_malloc() failed allocating %u bytes", desired_size);
-            LZHAM_FAIL(buf);
+            return false;
          }
          
          (*pMover)(new_p, m_p, m_size);

@@ -2,8 +2,6 @@
 // See Copyright Notice and license at the end of lzham.h
 #pragma once
 
-//#define LZHAM_LZDEBUG
-
 #define LZHAM_IS_MATCH_MODEL_INDEX(prev_char, cur_state) ((prev_char) >> (8 - CLZDecompBase::cNumIsMatchContextBits)) + ((cur_state) << CLZDecompBase::cNumIsMatchContextBits)
 
 #define LZHAM_USE_ALL_ARITHMETIC_CODING 0
@@ -45,12 +43,6 @@ namespace lzham
       {
          cLZXSpecialCodeEndOfBlockCode = 0,
          cLZXSpecialCodePartialStateReset = 1
-      };
-      
-      enum
-      {  
-         cLZHAMDebugSyncMarkerValue = 666,
-         cLZHAMDebugSyncMarkerBits = 12
       };
 
       enum

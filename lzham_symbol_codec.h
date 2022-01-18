@@ -290,7 +290,7 @@ namespace lzham
    };
 
 // Optional macros for faster decompression. These macros implement the symbol_codec class's decode functionality.
-// This is hard to debug (and just plain ugly), but using these macros eliminate function calls, and they place the most important 
+// This is hard to debug (and just plain ugly), but using these macros eliminate function calls, and they place the most important
 // member variables on the stack so they're hopefully put in registers (avoiding horrible load hit stores on some CPU's).
 // The user must define the LZHAM_DECODE_NEEDS_BYTES macro, which is invoked when the decode buffer is exhausted.
 

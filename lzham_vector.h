@@ -12,7 +12,7 @@ namespace lzham
 
       typedef void (*object_mover)(void* pDst, void* pSrc, uint num);
 
-      bool increase_capacity(uint min_new_capacity, bool grow_hint, uint element_size, object_mover pRelocate, bool nofail);
+      bool increase_capacity(uint min_new_capacity, bool grow_hint, uint element_size, object_mover pRelocate);
    };
 
    template<typename T>
@@ -39,7 +39,7 @@ namespace lzham
          m_size(0),
          m_capacity(0)
       {
-         increase_capacity(n, false);
+         increase_capacity(n);
          helpers::construct_array(m_p, n, init);
          m_size = n;
       }
@@ -49,7 +49,7 @@ namespace lzham
          m_size(0),
          m_capacity(0)
       {
-         increase_capacity(other.m_size, false);
+         increase_capacity(other.m_size);
 
          m_size = other.m_size;
 
@@ -93,7 +93,6 @@ namespace lzham
             clear();
             if (!increase_capacity(other.m_size, false))
             {
-               LZHAM_FAIL("lzham::vector operator=: Out of memory!");
                return *this;
             }
          }
@@ -167,7 +166,7 @@ namespace lzham
 
       inline bool try_reserve(uint new_capacity)
       {
-         return increase_capacity(new_capacity, true, true);
+         return increase_capacity(new_capacity, true);
       }
 
       inline bool try_resize(uint new_size, bool grow_hint = false)
@@ -180,7 +179,7 @@ namespace lzham
             {
                if (new_size > m_capacity)
                {
-                  if (!increase_capacity(new_size, (new_size == (m_size + 1)) || grow_hint, true))
+                  if (!increase_capacity(new_size, (new_size == (m_size + 1)) || grow_hint))
                      return false;
                }
 
@@ -197,7 +196,7 @@ namespace lzham
       {
          if (new_size > m_capacity)
          {
-            if (!increase_capacity(new_size, (new_size == (m_size + 1)) || grow_hint, true))
+            if (!increase_capacity(new_size, (new_size == (m_size + 1)) || grow_hint))
                return false;
          }
          
@@ -220,7 +219,7 @@ namespace lzham
 
          if (m_size >= m_capacity)
          {
-            if (!increase_capacity(m_size + 1, true, true))
+            if (!increase_capacity(m_size + 1, true))
                return false;
          }
 
@@ -566,11 +565,11 @@ namespace lzham
          }
       }
 
-      inline bool increase_capacity(uint min_new_capacity, bool grow_hint, bool nofail = false)
+      inline bool increase_capacity(uint min_new_capacity, bool grow_hint)
       {
          return reinterpret_cast<elemental_vector*>(this)->increase_capacity(
             min_new_capacity, grow_hint, sizeof(T),
-            (LZHAM_IS_BITWISE_MOVABLE(T) || (is_vector<T>::cFlag)) ? NULL : object_mover, nofail);
+            (LZHAM_IS_BITWISE_MOVABLE(T) || (is_vector<T>::cFlag)) ? NULL : object_mover);
       }
    };
 

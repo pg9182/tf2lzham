@@ -105,8 +105,6 @@ namespace lzham
             lzham_free(reinterpret_cast<uint8*>(p) - LZHAM_MIN_ALLOC_ALIGNMENT);
          }
       }
-   }   
-   
-   void lzham_print_mem_stats();
+   }
 
 } // namespace lzham

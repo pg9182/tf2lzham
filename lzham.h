@@ -18,10 +18,6 @@
 #ifndef __LZHAM_H__
 #define __LZHAM_H__
 
-#ifdef _MSC_VER
-#pragma once
-#endif
-
 #include <stdlib.h>
 
 // Upper byte = major version
@@ -38,12 +34,6 @@
    #define LZHAM_CDECL
 #endif
 
-#ifdef LZHAM_EXPORTS
-   #define LZHAM_DLL_EXPORT __declspec(dllexport)
-#else
-   #define LZHAM_DLL_EXPORT
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -54,7 +44,7 @@ extern "C" {
    typedef unsigned int    lzham_bool;
 
    // Returns DLL version (LZHAM_DLL_VERSION).
-   LZHAM_DLL_EXPORT lzham_uint32 LZHAM_CDECL lzham_get_version(void);
+    lzham_uint32 LZHAM_CDECL lzham_get_version(void);
 
    // User provided memory allocation
 
@@ -65,7 +55,7 @@ extern "C" {
    typedef size_t (LZHAM_CDECL *lzham_msize_func)(void* p, void* pUser_data);
 
    // Call this function to force LZHAM to use custom memory malloc(), realloc(), free() and msize functions.
-   LZHAM_DLL_EXPORT void LZHAM_CDECL lzham_set_memory_callbacks(lzham_realloc_func pRealloc, lzham_msize_func pMSize, void* pUser_data);
+    void LZHAM_CDECL lzham_set_memory_callbacks(lzham_realloc_func pRealloc, lzham_msize_func pMSize, void* pUser_data);
 
    // lzham_flush_t must map directly to the zlib-style API flush types (LZHAM_Z_NO_FLUSH, etc.)
    typedef enum
@@ -155,13 +145,13 @@ extern "C" {
    // Initializes a compressor. Returns a pointer to the compressor's internal state, or NULL on failure.
    // pParams cannot be NULL. Be sure to initialize the pParams->m_struct_size member to sizeof(lzham_compress_params) (along with the other members to reasonable values) before calling this function.
    // TODO: With large dictionaries this function could take a while (due to memory allocation). I need to add a reinit() API for compression (decompression already has one).
-   LZHAM_DLL_EXPORT lzham_compress_state_ptr LZHAM_CDECL lzham_compress_init(const lzham_compress_params *pParams);
+    lzham_compress_state_ptr LZHAM_CDECL lzham_compress_init(const lzham_compress_params *pParams);
 
-   LZHAM_DLL_EXPORT lzham_compress_state_ptr LZHAM_CDECL lzham_compress_reinit(lzham_compress_state_ptr pState);
+    lzham_compress_state_ptr LZHAM_CDECL lzham_compress_reinit(lzham_compress_state_ptr pState);
 
    // Deinitializes a compressor, releasing all allocated memory.
    // returns adler32 and crc32 of source data (valid only on success).
-   LZHAM_DLL_EXPORT lzham_compress_checksums* LZHAM_CDECL lzham_compress_deinit(lzham_compress_state_ptr pState);
+    lzham_compress_checksums* LZHAM_CDECL lzham_compress_deinit(lzham_compress_state_ptr pState);
 
    // Compresses an arbitrarily sized block of data, writing as much available compressed data as possible to the output buffer. 
    // This method may be called as many times as needed, but for best perf. try not to call it with tiny buffers.
@@ -178,13 +168,13 @@ extern "C" {
    // Success/failure return status codes:
    //    LZHAM_COMP_STATUS_SUCCESS - Compression has completed successfully.
    //    LZHAM_COMP_STATUS_FAILED, LZHAM_COMP_STATUS_FAILED_INITIALIZING, LZHAM_COMP_STATUS_INVALID_PARAMETER - Something went wrong.
-   LZHAM_DLL_EXPORT lzham_compress_status_t LZHAM_CDECL lzham_compress(
+    lzham_compress_status_t LZHAM_CDECL lzham_compress(
       lzham_compress_state_ptr pState,
       const lzham_uint8 *pIn_buf, size_t *pIn_buf_size,
       lzham_uint8 *pOut_buf, size_t *pOut_buf_size,
       lzham_bool no_more_input_bytes_flag);
 
-   LZHAM_DLL_EXPORT lzham_compress_status_t LZHAM_CDECL lzham_compress2(
+    lzham_compress_status_t LZHAM_CDECL lzham_compress2(
       lzham_compress_state_ptr pState,
       const lzham_uint8 *pIn_buf, size_t *pIn_buf_size,
       lzham_uint8 *pOut_buf, size_t *pOut_buf_size,
@@ -192,7 +182,7 @@ extern "C" {
 
    // Single function call compression interface.
    // Same return codes as lzham_compress, except this function can also return LZHAM_COMP_STATUS_OUTPUT_BUF_TOO_SMALL.
-   LZHAM_DLL_EXPORT lzham_compress_status_t LZHAM_CDECL lzham_compress_memory(
+    lzham_compress_status_t LZHAM_CDECL lzham_compress_memory(
       const lzham_compress_params *pParams,
       lzham_uint8* pDst_buf,
       size_t *pDst_len,
@@ -275,14 +265,14 @@ extern "C" {
    // pParams cannot be NULL. Be sure to initialize the pParams->m_struct_size member to sizeof(lzham_decompress_params) (along with the other members to reasonable values) before calling this function.
    // Note: With large dictionaries this function could take a while (due to memory allocation). To serially decompress multiple streams, it's faster to init a compressor once and 
    // reuse it using by calling lzham_decompress_reinit().
-   LZHAM_DLL_EXPORT lzham_decompress_state_ptr LZHAM_CDECL lzham_decompress_init(const lzham_decompress_params *pParams);
+    lzham_decompress_state_ptr LZHAM_CDECL lzham_decompress_init(const lzham_decompress_params *pParams);
 
    // Quickly re-initializes the decompressor to its initial state given an already allocated/initialized state (doesn't do any memory alloc unless necessary).
-   LZHAM_DLL_EXPORT lzham_decompress_state_ptr LZHAM_CDECL lzham_decompress_reinit(lzham_decompress_state_ptr pState, const lzham_decompress_params *pParams);
+    lzham_decompress_state_ptr LZHAM_CDECL lzham_decompress_reinit(lzham_decompress_state_ptr pState, const lzham_decompress_params *pParams);
 
    // Deinitializes a decompressor.
    // returns adler32 of decompressed data if compute_adler32 was true, otherwise it returns the adler32 from the compressed stream.
-   LZHAM_DLL_EXPORT lzham_decompress_checksums* LZHAM_CDECL lzham_decompress_deinit(lzham_decompress_state_ptr pState);
+    lzham_decompress_checksums* LZHAM_CDECL lzham_decompress_deinit(lzham_decompress_state_ptr pState);
 
    // Decompresses an arbitrarily sized block of compressed data, writing as much available decompressed data as possible to the output buffer. 
    // This method is implemented as a coroutine so it may be called as many times as needed. However, for best perf. try not to call it with tiny buffers.
@@ -298,14 +288,14 @@ extern "C" {
    // In buffered mode, if the output buffer's size is 0 bytes, the caller is indicating that no more output bytes are expected from the
    //  decompressor. In this case, if the decompressor actually has more bytes you'll receive the LZHAM_DECOMP_STATUS_HAS_MORE_OUTPUT
    //  error (which is recoverable in the buffered case - just call lzham_decompress() again with a non-zero size output buffer).
-   LZHAM_DLL_EXPORT lzham_decompress_status_t LZHAM_CDECL lzham_decompress(
+    lzham_decompress_status_t LZHAM_CDECL lzham_decompress(
       lzham_decompress_state_ptr pState,
       const lzham_uint8 *pIn_buf, size_t *pIn_buf_size,
       lzham_uint8 *pOut_buf, size_t *pOut_buf_size,
       lzham_bool no_more_input_bytes_flag);
 
    // Single function call interface.
-   LZHAM_DLL_EXPORT lzham_decompress_status_t LZHAM_CDECL lzham_decompress_memory(
+    lzham_decompress_status_t LZHAM_CDECL lzham_decompress_memory(
       const lzham_decompress_params *pParams,
       lzham_uint8* pDst_buf,
       size_t *pDst_len,
@@ -328,11 +318,11 @@ extern "C" {
 
    #define LZHAM_Z_ADLER32_INIT (1)
    // lzham_adler32() returns the initial adler-32 value to use when called with ptr==NULL.
-   LZHAM_DLL_EXPORT lzham_z_ulong lzham_z_adler32(lzham_z_ulong adler, const unsigned char *ptr, size_t buf_len);
+    lzham_z_ulong lzham_z_adler32(lzham_z_ulong adler, const unsigned char *ptr, size_t buf_len);
 
    #define LZHAM_Z_CRC32_INIT (0)
    // lzham_crc32() returns the initial CRC-32 value to use when called with ptr==NULL.
-   LZHAM_DLL_EXPORT lzham_z_ulong lzham_z_crc32(lzham_z_ulong crc, const unsigned char *ptr, size_t buf_len);
+    lzham_z_ulong lzham_z_crc32(lzham_z_ulong crc, const unsigned char *ptr, size_t buf_len);
 
    // Compression strategies.
    enum 
@@ -444,7 +434,7 @@ extern "C" {
 
    typedef lzham_z_stream *lzham_z_streamp;
 
-   LZHAM_DLL_EXPORT const char *lzham_z_version(void);
+    const char *lzham_z_version(void);
 
    // lzham_deflateInit() initializes a compressor with default options:
    // Parameters:
@@ -456,17 +446,17 @@ extern "C" {
    //  LZHAM_STREAM_ERROR if the stream is bogus.
    //  LZHAM_PARAM_ERROR if the input parameters are bogus.
    //  LZHAM_MEM_ERROR on out of memory.
-   LZHAM_DLL_EXPORT int lzham_z_deflateInit(lzham_z_streamp pStream, int level);
+    int lzham_z_deflateInit(lzham_z_streamp pStream, int level);
 
    // lzham_deflateInit2() is like lzham_deflate(), except with more control:
    // Additional parameters:
    //   method must be LZHAM_Z_DEFLATED or LZHAM_Z_LZHAM (LZHAM_Z_DEFLATED will be internally converted to LZHAM_Z_LZHAM with a windowsize of LZHAM_Z_DEFAULT_WINDOW_BITS)
    //   window_bits must be LZHAM_DEFAULT_WINDOW_BITS (to wrap the deflate stream with zlib header/adler-32 footer) or -LZHAM_Z_DEFAULT_WINDOW_BITS (raw deflate/no header or footer)
    //   mem_level must be between [1, 9] (it's checked but ignored by lzham)
-   LZHAM_DLL_EXPORT int lzham_z_deflateInit2(lzham_z_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy);
+    int lzham_z_deflateInit2(lzham_z_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy);
       
    // Quickly resets a compressor without having to reallocate anything. Same as calling lzham_z_deflateEnd() followed by lzham_z_deflateInit()/lzham_z_deflateInit2().
-   LZHAM_DLL_EXPORT int lzham_z_deflateReset(lzham_z_streamp pStream);
+    int lzham_z_deflateReset(lzham_z_streamp pStream);
 
    // lzham_deflate() compresses the input to output, consuming as much of the input and producing as much output as possible.
    // Parameters:
@@ -478,33 +468,33 @@ extern "C" {
    //   LZHAM_Z_STREAM_ERROR if the stream is bogus.
    //   LZHAM_Z_PARAM_ERROR if one of the parameters is invalid.
    //   LZHAM_Z_BUF_ERROR if no forward progress is possible because the input and/or output buffers are empty. (Fill up the input buffer or free up some output space and try again.)
-   LZHAM_DLL_EXPORT int lzham_z_deflate(lzham_z_streamp pStream, int flush);
+    int lzham_z_deflate(lzham_z_streamp pStream, int flush);
 
    // lzham_deflateEnd() deinitializes a compressor:
    // Return values:
    //  LZHAM_Z_OK on success.
    //  LZHAM_Z_STREAM_ERROR if the stream is bogus.
-   LZHAM_DLL_EXPORT int lzham_z_deflateEnd(lzham_z_streamp pStream);
+    int lzham_z_deflateEnd(lzham_z_streamp pStream);
 
    // lzham_deflateBound() returns a (very) conservative upper bound on the amount of data that could be generated by lzham_z_deflate(), assuming flush is set to only LZHAM_Z_NO_FLUSH or LZHAM_Z_FINISH.
-   LZHAM_DLL_EXPORT lzham_z_ulong lzham_z_deflateBound(lzham_z_streamp pStream, lzham_z_ulong source_len);
+    lzham_z_ulong lzham_z_deflateBound(lzham_z_streamp pStream, lzham_z_ulong source_len);
 
    // Single-call compression functions lzham_z_compress() and lzham_z_compress2():
    // Returns LZHAM_Z_OK on success, or one of the error codes from lzham_z_deflate() on failure.
-   LZHAM_DLL_EXPORT int lzham_z_compress(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len);
-   LZHAM_DLL_EXPORT int lzham_z_compress2(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len, int level);
+    int lzham_z_compress(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len);
+    int lzham_z_compress2(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len, int level);
 
    // lzham_z_compressBound() returns a (very) conservative upper bound on the amount of data that could be generated by calling lzham_z_compress().
-   LZHAM_DLL_EXPORT lzham_z_ulong lzham_z_compressBound(lzham_z_ulong source_len);
+    lzham_z_ulong lzham_z_compressBound(lzham_z_ulong source_len);
 
    // Initializes a decompressor.
-   LZHAM_DLL_EXPORT int lzham_z_inflateInit(lzham_z_streamp pStream);
+    int lzham_z_inflateInit(lzham_z_streamp pStream);
 
    // lzham_z_inflateInit2() is like lzham_z_inflateInit() with an additional option that controls the window size and whether or not the stream has been wrapped with a zlib header/footer:
    // window_bits must be LZHAM_Z_DEFAULT_WINDOW_BITS (to parse zlib header/footer) or -LZHAM_Z_DEFAULT_WINDOW_BITS (raw stream with no zlib header/footer).
-   LZHAM_DLL_EXPORT int lzham_z_inflateInit2(lzham_z_streamp pStream, int window_bits);
+    int lzham_z_inflateInit2(lzham_z_streamp pStream, int window_bits);
 
-   LZHAM_DLL_EXPORT int lzham_z_inflateReset(lzham_z_streamp pStream);
+    int lzham_z_inflateReset(lzham_z_streamp pStream);
 
    // Decompresses the input stream to the output, consuming only as much of the input as needed, and writing as much to the output as possible.
    // Parameters:
@@ -520,97 +510,17 @@ extern "C" {
    //   LZHAM_Z_PARAM_ERROR if one of the parameters is invalid.
    //   LZHAM_Z_BUF_ERROR if no forward progress is possible because the input buffer is empty but the inflater needs more input to continue, or if the output buffer is not large enough. Call lzham_inflate() again
    //   with more input data, or with more room in the output buffer (except when using single call decompression, described above).
-   LZHAM_DLL_EXPORT int lzham_z_inflate(lzham_z_streamp pStream, int flush);
+    int lzham_z_inflate(lzham_z_streamp pStream, int flush);
 
    // Deinitializes a decompressor.
-   LZHAM_DLL_EXPORT int lzham_z_inflateEnd(lzham_z_streamp pStream);
+    int lzham_z_inflateEnd(lzham_z_streamp pStream);
 
    // Single-call decompression.
    // Returns LZHAM_OK on success, or one of the error codes from lzham_inflate() on failure.
-   LZHAM_DLL_EXPORT int lzham_z_uncompress(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len);
+    int lzham_z_uncompress(unsigned char *pDest, lzham_z_ulong *pDest_len, const unsigned char *pSource, lzham_z_ulong source_len);
 
    // Returns a string description of the specified error code, or NULL if the error code is invalid.
-   LZHAM_DLL_EXPORT const char *lzham_z_error(int err);
-
-   // Redefine zlib-compatible names to lzham equivalents, so lzham can be used as a more or less drop-in replacement for the subset of zlib that lzham supports.
-   // Define LZHAM_NO_ZLIB_COMPATIBLE_NAMES to disable zlib-compatibility if you use zlib in the same project.
-   #ifdef LZHAM_DEFINE_ZLIB_API
-      typedef unsigned char Byte;
-      typedef unsigned int uInt;
-      typedef lzham_z_ulong uLong;
-      typedef Byte Bytef;
-      typedef uInt uIntf;
-      typedef char charf;
-      typedef int intf;
-      typedef void *voidpf;
-      typedef uLong uLongf;
-      typedef void *voidp;
-      typedef void *const voidpc;
-      #define Z_NULL                0
-      #define Z_NO_FLUSH            LZHAM_Z_NO_FLUSH
-      #define Z_PARTIAL_FLUSH       LZHAM_Z_PARTIAL_FLUSH
-      #define Z_SYNC_FLUSH          LZHAM_Z_SYNC_FLUSH
-      #define Z_FULL_FLUSH          LZHAM_Z_FULL_FLUSH
-      #define Z_FINISH              LZHAM_Z_FINISH
-      #define Z_BLOCK               LZHAM_Z_BLOCK
-      #define Z_OK                  LZHAM_Z_OK
-      #define Z_STREAM_END          LZHAM_Z_STREAM_END
-      #define Z_NEED_DICT           LZHAM_Z_NEED_DICT
-      #define Z_ERRNO               LZHAM_Z_ERRNO
-      #define Z_STREAM_ERROR        LZHAM_Z_STREAM_ERROR
-      #define Z_DATA_ERROR          LZHAM_Z_DATA_ERROR
-      #define Z_MEM_ERROR           LZHAM_Z_MEM_ERROR
-      #define Z_BUF_ERROR           LZHAM_Z_BUF_ERROR
-      #define Z_VERSION_ERROR       LZHAM_Z_VERSION_ERROR
-      #define Z_PARAM_ERROR         LZHAM_Z_PARAM_ERROR
-      #define Z_NO_COMPRESSION      LZHAM_Z_NO_COMPRESSION
-      #define Z_BEST_SPEED          LZHAM_Z_BEST_SPEED
-      #define Z_BEST_COMPRESSION    LZHAM_Z_BEST_COMPRESSION
-      #define Z_DEFAULT_COMPRESSION LZHAM_Z_DEFAULT_COMPRESSION
-      #define Z_DEFAULT_STRATEGY    LZHAM_Z_DEFAULT_STRATEGY
-      #define Z_FILTERED            LZHAM_Z_FILTERED
-      #define Z_HUFFMAN_ONLY        LZHAM_Z_HUFFMAN_ONLY
-      #define Z_RLE                 LZHAM_Z_RLE
-      #define Z_FIXED               LZHAM_Z_FIXED
-      #define Z_DEFLATED            LZHAM_Z_DEFLATED
-      #define Z_DEFAULT_WINDOW_BITS LZHAM_Z_DEFAULT_WINDOW_BITS
-      #define alloc_func            lzham_z_alloc_func
-      #define free_func             lzham_z_free_func
-      #define internal_state        lzham_z_internal_state
-      #define z_stream              lzham_z_stream
-      #define deflateInit           lzham_z_deflateInit
-      #define deflateInit2          lzham_z_deflateInit2
-      #define deflateReset          lzham_z_deflateReset
-      #define deflate               lzham_z_deflate
-      #define deflateEnd            lzham_z_deflateEnd
-      #define deflateBound          lzham_z_deflateBound
-      #define compress              lzham_z_compress
-      #define compress2             lzham_z_compress2
-      #define compressBound         lzham_z_compressBound
-      #define inflateInit           lzham_z_inflateInit
-      #define inflateInit2          lzham_z_inflateInit2
-      #define inflateReset          lzham_z_inflateReset
-      #define inflate               lzham_z_inflate
-      #define inflateEnd            lzham_z_inflateEnd
-      #define uncompress            lzham_z_uncompress
-      #define crc32                 lzham_z_crc32
-      #define adler32               lzham_z_adler32
-      #define MAX_WBITS             26
-      #define MAX_MEM_LEVEL         9
-      #define zError                lzham_z_error
-      #define ZLIB_VERSION          LZHAM_Z_VERSION
-      #define ZLIB_VERNUM           LZHAM_Z_VERNUM
-      #define ZLIB_VER_MAJOR        LZHAM_Z_VER_MAJOR
-      #define ZLIB_VER_MINOR        LZHAM_Z_VER_MINOR
-      #define ZLIB_VER_REVISION     LZHAM_Z_VER_REVISION
-      #define ZLIB_VER_SUBREVISION  LZHAM_Z_VER_SUBREVISION
-      #define zlibVersion           lzham_z_version
-      #define zlib_version          lzham_z_version()
-      #define Z_BINARY              LZHAM_Z_BINARY
-      #define Z_TEXT                LZHAM_Z_TEST
-      #define Z_ASCII               LZHAM_Z_ASCII
-      #define Z_UNKNOWN             LZHAM_Z_UNKNOWN
-   #endif // #ifdef LZHAM_DEFINE_ZLIB_API
+    const char *lzham_z_error(int err);
 
    // Exported function typedefs, to simplify loading the LZHAM DLL dynamically.
    typedef lzham_uint32 (LZHAM_CDECL *lzham_get_version_func)(void);
@@ -650,94 +560,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#ifdef __cplusplus
-// This optional interface is used by the dynamic/static link helpers defined in lzham_dynamic_lib.h and lzham_static_lib.h.
-// It allows code to always call LZHAM the same way, independent of how it was linked into the app (statically or dynamically).
-class ilzham
-{
-   ilzham(const ilzham &other);
-   ilzham& operator= (const ilzham &rhs);
-
-public:
-   ilzham() { clear(); }
-
-   virtual ~ilzham() { }
-   virtual bool load() = 0;
-   virtual void unload() = 0;
-   virtual bool is_loaded() = 0;
-
-   void clear()
-   {
-      this->lzham_get_version = NULL;
-      this->lzham_set_memory_callbacks = NULL;
-      
-      this->lzham_compress_init = NULL;
-      this->lzham_compress_reinit = NULL;
-      this->lzham_compress_deinit = NULL;
-      this->lzham_compress = NULL;
-      this->lzham_compress2 = NULL;
-      this->lzham_compress_memory = NULL;
-      
-      this->lzham_decompress_init = NULL;
-      this->lzham_decompress_reinit = NULL;
-      this->lzham_decompress_deinit = NULL;
-      this->lzham_decompress = NULL;
-      this->lzham_decompress_memory = NULL;
-
-      this->lzham_z_version = NULL;
-      this->lzham_z_deflateInit = NULL;
-      this->lzham_z_deflateInit2 = NULL;
-      this->lzham_z_deflateReset = NULL;
-      this->lzham_z_deflate = NULL;
-      this->lzham_z_deflateEnd = NULL;
-      this->lzham_z_deflateBound = NULL;
-      this->lzham_z_compress = NULL;
-      this->lzham_z_compress2 = NULL;
-      this->lzham_z_compressBound = NULL;
-      this->lzham_z_inflateInit = NULL;
-      this->lzham_z_inflateInit2 = NULL;
-      this->lzham_z_inflate = NULL;
-      this->lzham_z_inflateEnd = NULL;
-      this->lzham_z_uncompress = NULL;
-      this->lzham_z_error = NULL;
-   }
-
-   lzham_get_version_func           lzham_get_version;
-   lzham_set_memory_callbacks_func  lzham_set_memory_callbacks;
-   
-   lzham_compress_init_func         lzham_compress_init;
-   lzham_compress_reinit_func       lzham_compress_reinit;
-   lzham_compress_deinit_func       lzham_compress_deinit;
-   lzham_compress_func              lzham_compress;
-   lzham_compress2_func             lzham_compress2;
-   lzham_compress_memory_func       lzham_compress_memory;
-
-   lzham_decompress_init_func       lzham_decompress_init;
-   lzham_decompress_reinit_func     lzham_decompress_reinit;
-   lzham_decompress_deinit_func     lzham_decompress_deinit;
-   lzham_decompress_func            lzham_decompress;
-   lzham_decompress_memory_func     lzham_decompress_memory;
-
-   lzham_z_version_func             lzham_z_version;
-   lzham_z_deflateInit_func         lzham_z_deflateInit;
-   lzham_z_deflateInit2_func        lzham_z_deflateInit2;
-   lzham_z_deflateReset_func        lzham_z_deflateReset;
-   lzham_z_deflate_func             lzham_z_deflate;
-   lzham_z_deflateEnd_func          lzham_z_deflateEnd;
-   lzham_z_deflateBound_func        lzham_z_deflateBound;
-   lzham_z_compress_func            lzham_z_compress;
-   lzham_z_compress2_func           lzham_z_compress2;
-   lzham_z_compressBound_func       lzham_z_compressBound;
-   lzham_z_inflateInit_func         lzham_z_inflateInit;
-   lzham_z_inflateInit2_func        lzham_z_inflateInit2;
-   lzham_z_inflateReset_func        lzham_z_inflateReset;
-   lzham_z_inflate_func             lzham_z_inflate;
-   lzham_z_inflateEnd_func          lzham_z_inflateEnd;
-   lzham_z_uncompress_func          lzham_z_uncompress;
-   lzham_z_error_func               lzham_z_error;
-};
-#endif // #ifdef __cplusplus
 
 #endif // #ifndef __LZHAM_H__
 
