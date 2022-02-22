@@ -6,7 +6,7 @@ static const lzham_uint32 tf2lzham_dict_size = 20; // required for compatibility
 static const lzham_compress_params tf2lzham_compress_params = {
     .m_struct_size = sizeof(lzham_compress_params),
     .m_dict_size_log2 = tf2lzham_dict_size,
-    .m_level = LZHAM_COMP_LEVEL_BETTER,
+    .m_level = LZHAM_COMP_LEVEL_UBER,
     .m_compress_flags = LZHAM_COMP_FLAG_DETERMINISTIC_PARSING,
 };
 
