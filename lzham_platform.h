@@ -20,6 +20,10 @@ LZHAM_FORCE_INLINE void lzham_yield_processor()
 }
 #endif
 
+#ifdef __MINGW32__
+#define malloc_usable_size _msize
+#endif
+
 // Note: It's very important that LZHAM_READ_BIG_ENDIAN_UINT32() is fast on the target platform.
 // This is used to read every DWORD from the input stream.
 

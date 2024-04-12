@@ -41,6 +41,7 @@ const bool c_lzham_big_endian_platform = !c_lzham_little_endian_platform;
 #include <malloc.h>
 #include <stdarg.h>
 #include <memory.h>
+#include <string.h>
 #include <limits.h>
 #include <algorithm>
 #include <errno.h>
