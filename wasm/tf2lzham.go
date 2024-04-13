@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
@@ -16,24 +17,27 @@ import (
 var wasm []byte
 
 var (
+	compile sync.Once
 	runtime wazero.Runtime
 	module  wazero.CompiledModule
 )
 
-func init() {
-	ctx := context.Background()
+func EnsureCompiled() {
+	compile.Do(func() {
+		ctx := context.Background()
 
-	runtime = wazero.NewRuntime(ctx)
+		runtime = wazero.NewRuntime(ctx)
 
-	_, err := wasi_snapshot_preview1.Instantiate(ctx, runtime)
-	if err != nil {
-		panic(fmt.Errorf("tf2lzham/wasm: failed to instantiate wasi runtime: %w", err))
-	}
+		_, err := wasi_snapshot_preview1.Instantiate(ctx, runtime)
+		if err != nil {
+			panic(fmt.Errorf("tf2lzham/wasm: failed to instantiate wasi runtime: %w", err))
+		}
 
-	module, err = runtime.CompileModule(ctx, wasm)
-	if err != nil {
-		panic(fmt.Errorf("tf2lzham/wasm: failed to compile module: %w", err))
-	}
+		module, err = runtime.CompileModule(ctx, wasm)
+		if err != nil {
+			panic(fmt.Errorf("tf2lzham/wasm: failed to compile module: %w", err))
+		}
+	})
 }
 
 func execute(dst, src []byte, decompress bool) (int, uint32, uint32, error) {
@@ -48,6 +52,8 @@ func execute(dst, src []byte, decompress bool) (int, uint32, uint32, error) {
 	} else {
 		method = "compress"
 	}
+
+	EnsureCompiled()
 
 	// we cannot use an instantiated module concurrently
 	// - we grow the instantiated memory to fit the buffer
