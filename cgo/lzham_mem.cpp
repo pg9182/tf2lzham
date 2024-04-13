@@ -3,7 +3,6 @@
 #include "lzham_core.h"
 #include <stdio.h>
 #include <stdint.h>
-#include <malloc.h>
 
 using namespace lzham;
 

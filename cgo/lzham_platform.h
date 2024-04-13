@@ -20,6 +20,12 @@ LZHAM_FORCE_INLINE void lzham_yield_processor()
 }
 #endif
 
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#define malloc_usable_size malloc_size
+#else
+#include <malloc.h>
+#endif
 #ifdef __MINGW32__
 #define malloc_usable_size _msize
 #endif
