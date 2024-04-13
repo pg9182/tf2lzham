@@ -1,14 +1,15 @@
-//go:build !cgo
-// +build !cgo
+//go:build !cgo || tf2lzhamgo
 
 package tf2lzham
 
-import "errors"
+import tf2lzham "github.com/pg9182/tf2lzham/wasm"
+
+const WebAssembly = true
 
 func Decompress(dst, src []byte) (n int, adler32, crc32 uint32, err error) {
-	return 0, 0, 0, errors.New("lzham: cgo required")
+	return tf2lzham.Decompress(dst, src)
 }
 
 func Compress(dst, src []byte) (n int, adler32, crc32 uint32, err error) {
-	return 0, 0, 0, errors.New("lzham: cgo required")
+	return tf2lzham.Compress(dst, src)
 }

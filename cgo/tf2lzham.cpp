@@ -16,6 +16,14 @@ static const lzham_decompress_params tf2lzham_decompress_params = {
     .m_decompress_flags = LZHAM_DECOMP_FLAG_OUTPUT_UNBUFFERED | LZHAM_DECOMP_FLAG_COMPUTE_ADLER32 | LZHAM_DECOMP_FLAG_COMPUTE_CRC32,
 };
 
+#ifdef __wasm__
+static_assert(sizeof(size_t) == sizeof(uint32_t), "expected size_t to be uint32 for WebAssembly");
+#endif
+
+extern "C" void *tf2lzham_malloc(size_t sz) {
+    return operator new(sz);
+}
+
 extern "C" uint32_t tf2lzham_compress(uint8_t *dst, size_t *dst_len, const uint8_t *src, size_t src_len, uint32_t *adler32_out, uint32_t *crc32_out) {
     return lzham_compress_memory(&tf2lzham_compress_params, dst, dst_len, src, src_len, adler32_out, crc32_out);
 }
